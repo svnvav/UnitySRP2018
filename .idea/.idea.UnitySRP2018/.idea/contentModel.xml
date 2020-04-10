@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\a.savinov\.Rider2019.2\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\a.savinov\.Rider2019.2\system\resharper-host\local\Transient\ReSharperHost\v192\SolutionCaches\_UnitySRP2018.-1933512855.00" t="ExcludeRecursive" />
+    <e p="D:\unity\UnitySRP2018" t="IncludeRecursive">
+      <e p="Assembly-CSharp.csproj" t="IncludeRecursive" />
+      <e p="Assets" t="Include">
+        <e p="Scripts" t="Include">
+          <e p="MyPipeline.cs" t="Include" />
+          <e p="MyPipelineAsset.cs" t="Include" />
+        </e>
+      </e>
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="Packages" t="ExcludeRecursive" />
+      <e p="Temp\bin" t="ExcludeRecursive" />
+      <e p="UnitySRP2018.sln" t="IncludeFlat" />
+    </e>
+  </component>
+</project>
