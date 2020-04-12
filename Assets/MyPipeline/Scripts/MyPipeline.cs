@@ -13,6 +13,17 @@ namespace Svnvav.SRP2018
         };
         private Material _errorMaterial;
         
+        private DrawRendererFlags _drawFlags;
+
+        public MyPipeline (bool dynamicBatching, bool instancing) {
+            if (dynamicBatching) {
+                _drawFlags = DrawRendererFlags.EnableDynamicBatching;
+            }
+            if (instancing) {
+                _drawFlags |= DrawRendererFlags.EnableInstancing;
+            }
+        }
+        
         public override void Render(
             ScriptableRenderContext context, Camera[] cameras
         )
@@ -56,6 +67,7 @@ namespace Svnvav.SRP2018
                 camera,
                 new ShaderPassName("SRPDefaultUnlit")
             );
+            drawSettings.flags = _drawFlags;
             drawSettings.sorting.flags = SortFlags.CommonOpaque;
 
             var filterSettings = new FilterRenderersSettings(true)
