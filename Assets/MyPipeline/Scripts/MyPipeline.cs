@@ -7,6 +7,14 @@ namespace Svnvav.SRP2018
 {
     public class MyPipeline : RenderPipeline
     {
+        private const int MaxVisibleLights = 4;
+
+        private static int VisibleLightColorsId = Shader.PropertyToID("_VisibleLightColors");
+        private static int VisibleLightDirectionsId = Shader.PropertyToID("_VisibleLightDirections");
+        
+        private Vector4[] _visibleLightColors = new Vector4[MaxVisibleLights];
+        private Vector4[] _visibleLightDirections = new Vector4[MaxVisibleLights];
+
         private CullResults _cull;
         private CommandBuffer _cameraBuffer = new CommandBuffer {
             name = "Render Camera"
@@ -15,7 +23,9 @@ namespace Svnvav.SRP2018
         
         private DrawRendererFlags _drawFlags;
 
-        public MyPipeline (bool dynamicBatching, bool instancing) {
+        public MyPipeline (bool dynamicBatching, bool instancing)
+        {
+            GraphicsSettings.lightsUseLinearIntensity = true;
             if (dynamicBatching) {
                 _drawFlags = DrawRendererFlags.EnableDynamicBatching;
             }
@@ -54,14 +64,19 @@ namespace Svnvav.SRP2018
             context.SetupCameraProperties(camera);
 
             CameraClearFlags clearFlags = camera.clearFlags;
-            
-            
-            _cameraBuffer.BeginSample("Render Camera");
+
             _cameraBuffer.ClearRenderTarget(
                 (clearFlags & CameraClearFlags.Depth) != 0,
                 (clearFlags & CameraClearFlags.Color) != 0,
                 camera.backgroundColor
             );
+            
+            ConfigureLights();
+            
+            _cameraBuffer.BeginSample("Render Camera");
+            
+            _cameraBuffer.SetGlobalVectorArray(VisibleLightColorsId, _visibleLightColors);
+            _cameraBuffer.SetGlobalVectorArray(VisibleLightDirectionsId, _visibleLightDirections);
 
             var drawSettings = new DrawRendererSettings(
                 camera,
@@ -96,6 +111,28 @@ namespace Svnvav.SRP2018
             context.Submit();
         }
 
+        private void ConfigureLights () {
+            var i = 0;
+            for (; i < _cull.visibleLights.Count; i++) {
+                if (i >= MaxVisibleLights)
+                {
+                    break;
+                }
+                VisibleLight light = _cull.visibleLights[i];
+                _visibleLightColors[i] = light.finalColor;
+                var v = light.localToWorld.GetColumn(2);
+                v.x = -v.x;
+                v.y = -v.y;
+                v.z = -v.z;
+                _visibleLightDirections[i] = v;
+            }
+
+            for (;i < MaxVisibleLights; i++)
+            {
+                _visibleLightColors[i] = Color.clear;
+            }
+        }
+        
         [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
         private void DrawDefaultPipeline(ScriptableRenderContext context, Camera camera)
         {
