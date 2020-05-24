@@ -205,6 +205,8 @@ namespace Svnvav.SRP2018
                     v.y = -v.y;
                     v.z = -v.z;
                     _visibleLightDirectionsOrPositions[i] = v;
+                    shadow = ConfigureShadows(i, light.light);
+                    shadow.z = 1.0f;
                 }
                 else
                 {
@@ -226,17 +228,8 @@ namespace Svnvav.SRP2018
                         float angleRange = Mathf.Max(innerCos - outerCos, 0.001f);
                         attenuation.z = 1f / angleRange;
                         attenuation.w = -outerCos * attenuation.z;
-
-                        var shadowLight = light.light;
-                        Bounds shadowBounds;
-
-                        if (shadowLight.shadows != LightShadows.None &&
-                            _cull.GetShadowCasterBounds(i, out shadowBounds))
-                        {
-                            _shadowTileCount++;
-                            shadow.x = shadowLight.shadowStrength;
-                            shadow.y = shadowLight.shadows == LightShadows.Soft ? 1f : 0f;
-                        }
+                        
+                        shadow = ConfigureShadows(i, light.light);
                     }
                 }
 
@@ -256,6 +249,22 @@ namespace Svnvav.SRP2018
             }
         }
 
+        private Vector4 ConfigureShadows(int lightIndex, Light shadowLight)
+        {
+            Vector4 shadow = Vector4.zero;
+            Bounds shadowBounds;
+
+            if (shadowLight.shadows != LightShadows.None &&
+                _cull.GetShadowCasterBounds(lightIndex, out shadowBounds))
+            {
+                _shadowTileCount++;
+                shadow.x = shadowLight.shadowStrength;
+                shadow.y = shadowLight.shadows == LightShadows.Soft ? 1f : 0f;
+            }
+
+            return shadow;
+        }
+        
         private void RenderShadows(ScriptableRenderContext context)
         {
             int split;
@@ -308,8 +317,22 @@ namespace Svnvav.SRP2018
                 Matrix4x4 viewMatrix, projMatrix;
                 ShadowSplitData shadowSplitData;
 
-                if (!_cull.ComputeSpotShadowMatricesAndCullingPrimitives(i, out viewMatrix, out projMatrix,
-                    out shadowSplitData))
+                bool validShadows;
+
+                if (_shadowData[i].z > 0f)
+                {
+                    validShadows = _cull.ComputeDirectionalShadowMatricesAndCullingPrimitives(
+                        i, 0, 1, Vector3.right, (int)tileSize,
+                        _cull.visibleLights[i].light.shadowNearPlane,
+                        out viewMatrix, out projMatrix, out shadowSplitData);
+                }
+                else
+                {
+                    validShadows = _cull.ComputeSpotShadowMatricesAndCullingPrimitives(i,
+                        out viewMatrix, out projMatrix, out shadowSplitData);
+                }
+
+                if (!validShadows)
                 {
                     _shadowData[i].x = 0f;
                     continue;
@@ -333,6 +356,7 @@ namespace Svnvav.SRP2018
                 _shadowBuffer.Clear();
 
                 var shadowSettings = new DrawShadowsSettings(_cull, i);
+                shadowSettings.splitData.cullingSphere = shadowSplitData.cullingSphere;
                 context.DrawShadows(ref shadowSettings);
 
                 if (SystemInfo.usesReversedZBuffer)
